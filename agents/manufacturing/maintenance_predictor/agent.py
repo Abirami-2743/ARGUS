@@ -39,7 +39,7 @@ def schedule_maintenance(machine_id: str, maintenance_type: str, urgency: str) -
     }
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="maintenance_predictor_agent",
     description="Predicts equipment failures using sensor data and schedules preventive maintenance.",
     instruction="""You are a predictive maintenance agent.

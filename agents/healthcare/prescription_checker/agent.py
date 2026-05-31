@@ -29,7 +29,7 @@ def verify_dosage(medication: str, patient_weight_kg: float, age: int) -> dict:
     }
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="prescription_checker_agent",
     description="Verifies medication safety, dosages and drug interactions.",
     instruction="""You are a prescription safety checker AI.

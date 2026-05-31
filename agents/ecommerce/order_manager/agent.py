@@ -33,7 +33,7 @@ def process_return(order_id: str, reason: str, items: list) -> dict:
     }
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="order_manager_agent",
     description="Manages order tracking, returns and refund processing for ecommerce.",
     instruction="""You are an order management agent.

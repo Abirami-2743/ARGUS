@@ -37,7 +37,7 @@ def search_precedents(dispute_type: str, jurisdiction: str) -> dict:
     }
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="dispute_resolver_agent",
     description="Analyzes legal disputes and recommends resolution strategies.",
     instruction="""You are a legal dispute resolution agent.

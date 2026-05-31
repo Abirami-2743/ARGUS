@@ -38,7 +38,7 @@ def apply_discount(product_id: str, user_tier: str) -> dict:
     }
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="product_recommender_agent",
     description="Provides personalized product recommendations and applies loyalty discounts.",
     instruction="""You are a product recommendation agent.

@@ -1,8 +1,22 @@
+# Python
 venv/
-.env
 __pycache__/
 *.pyc
 *.pyo
-.env.local
+.env
 *.zip
+
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+
+# Google Cloud
+*.json
+gcloud/
+
+# Misc
 .dockerignore
+fix_agents.py
+fix_model.py
+fix_model2.py

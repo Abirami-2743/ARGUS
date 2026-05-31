@@ -31,7 +31,7 @@ def optimize_supply_route(origin: str, destination: str, cargo_weight: float) ->
     }
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="supply_chain_agent",
     description="Manages inventory levels and optimizes supply chain routing.",
     instruction="""You are a supply chain management agent.

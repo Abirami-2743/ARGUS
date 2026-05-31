@@ -25,7 +25,7 @@ def get_market_insights(sector: str) -> dict:
     return insights.get(sector.lower(), {"trend": "neutral", "risk": "medium", "recommendation": "HOLD"})
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="portfolio_advisor_agent",
     description="Analyzes investment portfolios and provides personalized financial advice.",
     instruction="""You are a portfolio advisor agent.

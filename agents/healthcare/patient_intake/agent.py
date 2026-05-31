@@ -24,7 +24,7 @@ def check_appointment_slots(department: str) -> dict:
     return {"department": department, "slots": slots.get(department, ["2026-06-15 11:00"])}
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="patient_intake_agent",
     description="Handles patient intake, triage assessment and appointment scheduling.",
     instruction="""You are a patient intake agent at a hospital.

@@ -34,7 +34,7 @@ def identify_contract_risks(contract_type: str) -> dict:
     }
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="contract_analyzer_agent",
     description="Analyzes legal contracts, extracts key clauses and identifies risks.",
     instruction="""You are a contract analysis agent.

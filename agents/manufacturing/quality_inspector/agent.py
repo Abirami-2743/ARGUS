@@ -34,7 +34,7 @@ def run_quality_tests(product_type: str, test_suite: str) -> dict:
     }
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="quality_inspector_agent",
     description="Inspects manufacturing product quality and runs quality test suites.",
     instruction="""You are a manufacturing quality inspector agent.

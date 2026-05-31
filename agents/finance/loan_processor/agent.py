@@ -27,7 +27,7 @@ def verify_documents(applicant_id: str, doc_types: list) -> dict:
     }
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="loan_processor_agent",
     description="Processes loan applications, assesses creditworthiness and verifies documents.",
     instruction="""You are a loan processing agent.

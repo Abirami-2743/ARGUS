@@ -36,7 +36,7 @@ def check_transaction_history(account_id: str, days: int) -> dict:
     }
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="fraud_detector_agent",
     description="Detects fraudulent financial transactions and protects customer accounts.",
     instruction="""You are a financial fraud detection agent.

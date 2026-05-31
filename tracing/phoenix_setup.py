@@ -1,30 +1,31 @@
 import os
 from dotenv import load_dotenv
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.langchain import LangChainInstrumentor
-
 load_dotenv()
 
 def setup_tracing(project_name: str = "argus-monitoring"):
     api_key = os.getenv("PHOENIX_API_KEY")
+    
+    os.environ["PHOENIX_API_KEY"] = api_key
+    os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = "https://app.phoenix.arize.com/v1/traces"
+    os.environ["PHOENIX_PROJECT_NAME"] = project_name
 
-    exporter = OTLPSpanExporter(
-        endpoint="https://app.phoenix.arize.com/s/abiramisgp/v1/traces",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "project-name": project_name,
-        },
-    )
+    try:
+        from phoenix.otel import register
+        tracer_provider = register(
+            project_name=project_name,
+            endpoint="https://app.phoenix.arize.com/v1/traces",
+        )
+        print("[ARGUS] ✓ Phoenix register() active")
 
-    provider = TracerProvider()
-    provider.add_span_processor(BatchSpanProcessor(exporter))
-    trace.set_tracer_provider(provider)
+        # Use Gemini instrumentor instead — more stable than ADK
+        from openinference.instrumentation.google_generative_ai import (
+            GoogleGenerativeAIInstrumentor,
+        )
+        GoogleGenerativeAIInstrumentor().instrument(tracer_provider=tracer_provider)
+        print("[ARGUS] ✓ Gemini instrumentation active")
 
-    LangChainInstrumentor().instrument()
+    except Exception as e:
+        print(f"[ARGUS] ⚠ Tracing error: {e}")
 
-    print(f"[ARGUS] Tracing live → project: {project_name}")
-    print(f"[ARGUS] Dashboard → https://app.phoenix.arize.com/s/abiramisgp")
-    return provider
+    print(f"[ARGUS] ✓ Project: {project_name}")
+    return None

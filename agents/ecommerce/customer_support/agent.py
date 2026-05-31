@@ -37,7 +37,7 @@ def check_customer_history(customer_id: str) -> dict:
     }
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="customer_support_agent",
     description="Resolves customer issues and provides personalized support based on history.",
     instruction="""You are a customer support agent.

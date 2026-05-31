@@ -28,7 +28,7 @@ def order_diagnostic_tests(condition_suspected: str) -> dict:
     return {"tests_ordered": test_map[key], "priority": "urgent"}
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="diagnosis_assistant_agent",
     description="Analyzes symptoms and suggests diagnostic pathways for physicians.",
     instruction="""You are a medical diagnosis assistant AI.

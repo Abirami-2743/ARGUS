@@ -34,7 +34,7 @@ def generate_compliance_report(company_name: str, regulations: list) -> dict:
     }
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="compliance_checker_agent",
     description="Checks regulatory compliance and generates compliance reports for companies.",
     instruction="""You are a regulatory compliance checker agent.
