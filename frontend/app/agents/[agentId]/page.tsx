@@ -10,7 +10,6 @@ interface Msg{role:'user'|'agent'|'argus';content:string;time:string;status?:'sa
 const SC={safe:'#00D4AA',warning:'#FFB347',danger:'#FF4444'}
 const SB={safe:'rgba(0,212,170,0.08)',warning:'rgba(255,179,71,0.08)',danger:'rgba(255,68,68,0.08)'}
 
-// Render basic markdown: **bold**, *italic*, bullet points
 function renderMarkdown(text:string){
   return text
     .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
@@ -19,6 +18,7 @@ function renderMarkdown(text:string){
     .replace(/(<li>[^<]*<\/li>)/g,'<ul style="margin:6px 0 6px 16px;padding:0">$1</ul>')
     .replace(/\n/g,'<br/>')
 }
+
 export default function AgentPage(){
   const {agentId}=useParams()
   const router=useRouter()
@@ -41,6 +41,7 @@ export default function AgentPage(){
     if(l.includes('threat assessment: critical')||l.includes('threat assessment: high'))return 'danger'
     if(l.includes('block_and_quarantine')||l.includes('block_and_alert')||l.includes('✗ block'))return 'danger'
     if(l.includes('threat assessment: medium')||l.includes('flag_for_review'))return 'warning'
+    if(l.includes('temporarily unavailable')||l.includes('manual review'))return 'warning'
     if(l.includes('threat assessment: safe')||l.includes('action: allow')||l.includes('✓ safe'))return 'safe'
     if(l.includes('block')||l.includes('critical'))return 'danger'
     if(l.includes('suspicious'))return 'warning'
@@ -58,9 +59,9 @@ export default function AgentPage(){
       const final=os==='danger'||is==='danger'?'danger':os==='warning'||is==='warning'?'warning':'safe'
       setStats(p=>({safe:p.safe+(final==='safe'?1:0),warn:p.warn+(final==='warning'?1:0),block:p.block+(final==='danger'?1:0)}))
       setMsgs(p=>[...p,
-        {role:'argus',content:`INPUT: ${r.argus_input_check.slice(0,180)}`,time:new Date().toLocaleTimeString(),status:is},
+        {role:'argus',content:`INPUT: ${r.argus_input_check.slice(0,400)}`,time:new Date().toLocaleTimeString(),status:is},
         {role:'agent',content:r.response||'Task completed.',time:new Date().toLocaleTimeString(),status:os},
-        {role:'argus',content:`OUTPUT: ${r.argus_output_check.slice(0,180)}`,time:new Date().toLocaleTimeString(),status:os},
+        {role:'argus',content:`OUTPUT: ${r.argus_output_check.slice(0,400)}`,time:new Date().toLocaleTimeString(),status:os},
       ])
     }catch(e:unknown){
       const msg=e instanceof Error?e.message:'Backend error'
@@ -72,7 +73,6 @@ export default function AgentPage(){
   return(
     <div style={{background:'#F8FAFF',minHeight:'100vh',display:'flex',flexDirection:'column'}}>
       <Navbar/>
-      {/* Header */}
       <div style={{background:'linear-gradient(135deg,#0D1B3E,#0A2444)',padding:'24px 48px',display:'flex',alignItems:'center',gap:'16px'}}>
         <Link href="/agents" style={{padding:'8px 16px',borderRadius:'8px',border:'1px solid rgba(255,255,255,0.2)',color:'rgba(255,255,255,0.7)',fontSize:'13px'}}>← Back</Link>
         <div style={{width:'44px',height:'44px',borderRadius:'12px',background:color+'20',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px'}}>{agent.icon}</div>
@@ -91,7 +91,6 @@ export default function AgentPage(){
       </div>
 
       <div style={{flex:1,display:'flex',overflow:'hidden'}}>
-        {/* Chat */}
         <div style={{flex:1,display:'flex',flexDirection:'column',padding:'24px 32px',overflow:'hidden'}}>
           <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:'14px',marginBottom:'20px',paddingRight:'8px'}}>
             {msgs.length===0&&(
@@ -115,7 +114,6 @@ export default function AgentPage(){
                 {m.role==='agent'&&(
                   <div style={{display:'flex',gap:'10px',alignItems:'flex-start'}}>
                     <div style={{width:'32px',height:'32px',borderRadius:'10px',background:color+'20',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',flexShrink:0}}>{agent.icon}</div>
-                    {/* Render markdown in agent responses */}
                     <div
                       style={{maxWidth:'70%',padding:'12px 16px',background:'#fff',border:'1px solid #E8EDF5',borderRadius:'4px 16px 16px 16px',fontSize:'14px',color:'#1A1A2E',lineHeight:1.7,boxShadow:'0 2px 8px rgba(13,27,62,0.06)'}}
                       dangerouslySetInnerHTML={{__html:renderMarkdown(m.content)}}
@@ -140,14 +138,12 @@ export default function AgentPage(){
             )}
             <div ref={endRef}/>
           </div>
-          {/* Input */}
           <div style={{display:'flex',gap:'12px',padding:'16px',background:'#fff',border:'1px solid #E8EDF5',borderRadius:'16px',boxShadow:'0 4px 20px rgba(13,27,62,0.08)'}}>
             <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&send()} placeholder={`Ask ${agent.name}...`} style={{flex:1,border:'none',outline:'none',color:'#1A1A2E',fontSize:'14px',background:'transparent'}}/>
             <button onClick={send} disabled={loading||!input.trim()} style={{padding:'10px 22px',borderRadius:'10px',background:loading||!input.trim()?'#E8EDF5':`linear-gradient(135deg,${color},${color}CC)`,color:loading||!input.trim()?'#8B9DC3':'#0D1B3E',border:'none',fontSize:'14px',fontWeight:700,transition:'all 0.15s'}}>{loading?'...':'Send →'}</button>
           </div>
         </div>
 
-        {/* ARGUS sidebar */}
         <div style={{width:'260px',borderLeft:'1px solid #E8EDF5',padding:'24px',background:'#fff',display:'flex',flexDirection:'column',gap:'20px'}}>
           <div>
             <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'14px'}}>
