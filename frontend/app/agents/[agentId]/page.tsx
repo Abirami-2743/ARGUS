@@ -10,6 +10,15 @@ interface Msg{role:'user'|'agent'|'argus';content:string;time:string;status?:'sa
 const SC={safe:'#00D4AA',warning:'#FFB347',danger:'#FF4444'}
 const SB={safe:'rgba(0,212,170,0.08)',warning:'rgba(255,179,71,0.08)',danger:'rgba(255,68,68,0.08)'}
 
+// Render basic markdown: **bold**, *italic*, bullet points
+function renderMarkdown(text:string){
+  return text
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*([^*]+?)\*/g,'<em>$1</em>')
+    .replace(/^[\*\-] (.+)/gm,'<li>$1</li>')
+    .replace(/(<li>[^<]*<\/li>)/g,'<ul style="margin:6px 0 6px 16px;padding:0">$1</ul>')
+    .replace(/\n/g,'<br/>')
+}
 export default function AgentPage(){
   const {agentId}=useParams()
   const router=useRouter()
@@ -29,8 +38,12 @@ export default function AgentPage(){
 
   const parseStatus=(s:string):'safe'|'warning'|'danger'=>{
     const l=s.toLowerCase()
+    if(l.includes('threat assessment: critical')||l.includes('threat assessment: high'))return 'danger'
+    if(l.includes('block_and_quarantine')||l.includes('block_and_alert')||l.includes('✗ block'))return 'danger'
+    if(l.includes('threat assessment: medium')||l.includes('flag_for_review'))return 'warning'
+    if(l.includes('threat assessment: safe')||l.includes('action: allow')||l.includes('✓ safe'))return 'safe'
     if(l.includes('block')||l.includes('critical'))return 'danger'
-    if(l.includes('warn')||l.includes('high')||l.includes('suspicious'))return 'warning'
+    if(l.includes('suspicious'))return 'warning'
     return 'safe'
   }
 
@@ -102,7 +115,11 @@ export default function AgentPage(){
                 {m.role==='agent'&&(
                   <div style={{display:'flex',gap:'10px',alignItems:'flex-start'}}>
                     <div style={{width:'32px',height:'32px',borderRadius:'10px',background:color+'20',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',flexShrink:0}}>{agent.icon}</div>
-                    <div style={{maxWidth:'70%',padding:'12px 16px',background:'#fff',border:'1px solid #E8EDF5',borderRadius:'4px 16px 16px 16px',fontSize:'14px',color:'#1A1A2E',lineHeight:1.7,boxShadow:'0 2px 8px rgba(13,27,62,0.06)'}}>{m.content}</div>
+                    {/* Render markdown in agent responses */}
+                    <div
+                      style={{maxWidth:'70%',padding:'12px 16px',background:'#fff',border:'1px solid #E8EDF5',borderRadius:'4px 16px 16px 16px',fontSize:'14px',color:'#1A1A2E',lineHeight:1.7,boxShadow:'0 2px 8px rgba(13,27,62,0.06)'}}
+                      dangerouslySetInnerHTML={{__html:renderMarkdown(m.content)}}
+                    />
                   </div>
                 )}
                 {m.role==='argus'&&m.status&&(
