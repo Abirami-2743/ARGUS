@@ -182,7 +182,7 @@ async def run_agent(request: RunAgentRequest):
             f"argus-post-{request.session_id}"
         )
     except Exception:
-        argus_output = "✓ ARGUS: Input and output cleared. No threats detected. (Model temporarily busy — auto-cleared)"
+        argus_output = "⚠ ARGUS: Model temporarily unavailable. Manual review recommended."
 
     return {
         "agent_id": request.agent_id,
