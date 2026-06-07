@@ -414,9 +414,9 @@ export default function LandingPage() {
               paddingTop: 36, gap: 16,
             }}>
             {[
-              { value: 2847, label: 'Threats Blocked', color: '#FF6B6B' },
+              { value: 12, label: 'Threats Blocked', color: '#FF6B6B' },
               { value: 15,   label: 'Agents Monitored', color: '#00D4AA' },
-              { value: 48291, label: 'Traces Analyzed', color: '#4285F4' },
+              { value: 40, label: 'Traces Analyzed', color: '#4285F4' },
             ].map(s => (
               <div key={s.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 38, fontWeight: 800, color: s.color, letterSpacing: '-1px' }}>

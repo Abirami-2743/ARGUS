@@ -142,10 +142,10 @@ export default function AboutPage(){
             <ArgusLogo size={48}/>
           </div>
           <div style={{flex:1}}>
-            <h3 style={{fontSize:'20px',fontWeight:700,color:'#0D1B3E',marginBottom:'4px'}}>Abirami Nayagi S</h3>
+            <h3 style={{fontSize:'20px',fontWeight:700,color:'#0D1B3E',marginBottom:'4px'}}>Abiraminayagi S</h3>
             <p style={{fontSize:'14px',color:'#4A5568',marginBottom:'12px'}}>3rd Year CSE</p>
             <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-              {['Meta x Scaler Grand Finalist','WattWise — Scopus Published','Bug Triage RL — OpenEnv','SkillScan AI','MarketPulse'].map(b=>(
+              {['Meta x Scaler Grand Finalist','WattWise — Scopus Published','Bug Triage RL — OpenEnv','MarketPulse'].map(b=>(
                 <span key={b} style={{padding:'4px 12px',borderRadius:'20px',background:'linear-gradient(135deg,rgba(0,212,170,0.08),rgba(66,133,244,0.08))',border:'1px solid rgba(0,212,170,0.2)',fontSize:'12px',color:'#0D1B3E',fontWeight:500}}>{b}</span>
               ))}
             </div>

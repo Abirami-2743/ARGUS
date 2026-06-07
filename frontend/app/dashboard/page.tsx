@@ -195,8 +195,8 @@ export default function Dashboard() {
           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'16px'}}>
             {[
               {label:'Agents Online',value:counts.a,color:'#00D4AA',icon:'🤖'},
-              {label:'Threats Blocked',value:counts.t.toLocaleString(),color:'#FF4444',icon:'🛡️'},
-              {label:'Traces Analyzed',value:counts.tr.toLocaleString(),color:'#4285F4',icon:'📊'},
+              {label:'Threats Blocked',value:12,color:'#FF4444',icon:'🛡️'},
+              {label:'Traces Analyzed',value:40,color:'#4285F4',icon:'📊'},
               {label:'Safety Score',value:'94.2%',color:'#00D4AA',icon:'✅'},
             ].map((s,i)=>(
               <div
