@@ -23,7 +23,7 @@ export default function TracesPage(){
     setLoading(false)
   }
 
-  useEffect(()=>{fetchLive()},[])
+  
 
   const renderMarkdown=(text:string)=>text.split('\n').map((line,i)=>{
     const clean=line.replace(/\*\*(.*?)\*\*/g,'$1').replace(/^[\*\-]\s/,'• ')
@@ -103,6 +103,7 @@ export default function TracesPage(){
         {/* Recent Traces Table */}
         <div style={{display:'flex',gap:'16px',marginBottom:'16px',alignItems:'center'}}>
           <h2 style={{fontSize:'18px',fontWeight:700,color:'#0D1B3E',flex:1}}>Recent Traces</h2>
+          <p style={{fontSize:'11px',color:'#8B9DC3',marginBottom:'8px'}}>* Sample trace format — view live traces in Phoenix above</p>
           <div style={{display:'flex',gap:'12px'}}>
             <span style={{fontSize:'11px',padding:'4px 10px',borderRadius:'20px',background:'rgba(0,212,170,0.1)',color:'#00D4AA',fontWeight:600}}>🛡 ARGUS → gemini-3.5-flash</span>
             <span style={{fontSize:'11px',padding:'4px 10px',borderRadius:'20px',background:'rgba(66,133,244,0.1)',color:'#4285F4',fontWeight:600}}>⚙️ Workers → gemini-2.5-flash-lite</span>
@@ -115,6 +116,7 @@ export default function TracesPage(){
             ))}
           </div>
           {MOCK_TRACES.map((t,i)=>(
+            
             <div key={t.id} style={{padding:'14px 20px',borderBottom:'1px solid #E8EDF5',display:'grid',gridTemplateColumns:'100px 160px 160px 80px 80px 80px 80px',gap:'12px',alignItems:'center',background:i%2===0?'#fff':'#FAFBFF'}}>
               <span style={{fontSize:'12px',color:'#4285F4',fontFamily:'JetBrains Mono,monospace'}}>{t.id}</span>
               <span style={{fontSize:'12px',color:'#1A1A2E',fontFamily:'JetBrains Mono,monospace'}}>{t.agent}</span>
