@@ -170,11 +170,14 @@ async def run_agent(request: RunAgentRequest):
 
     # 🚨 If input is dangerous — BLOCK immediately, don't run worker!
     input_lower = argus_input.lower()
-    if any(x in input_lower for x in [
-        'block', 'critical', 'danger', 'quarantine',
-        'injection', 'jailbreak', 'threat assessment: high',
-        'threat assessment: critical'
-    ]):
+    is_dangerous = (
+    'threat assessment: critical' in input_lower or
+    'threat assessment: high' in input_lower or
+    'block_and_quarantine' in input_lower or
+    'block_and_alert' in input_lower
+    )
+
+    if is_dangerous:
         return {
             "agent_id": request.agent_id,
             "query": request.query,
