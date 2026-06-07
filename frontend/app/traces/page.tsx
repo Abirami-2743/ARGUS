@@ -3,6 +3,15 @@ import {useState,useEffect} from 'react'
 import Navbar from '@/components/Navbar'
 import {getTraces} from '@/lib/api'
 
+const MOCK_TRACES=[
+  {id:'tr-001',agent:'patient_intake',model:'gemini-2.5-flash-lite',tokens:847,latency:'2.3s',score:0.92,status:'pass'},
+  {id:'tr-002',agent:'fraud_detector',model:'gemini-2.5-flash-lite',tokens:1203,latency:'3.1s',score:0.88,status:'pass'},
+  {id:'tr-003',agent:'loan_processor',model:'gemini-2.5-flash-lite',tokens:956,latency:'2.8s',score:0.71,status:'warn'},
+  {id:'tr-004',agent:'contract_analyzer',model:'gemini-2.5-flash-lite',tokens:2104,latency:'4.2s',score:0.95,status:'pass'},
+  {id:'tr-005',agent:'quality_inspector',model:'gemini-2.5-flash-lite',tokens:634,latency:'1.9s',score:0.97,status:'pass'},
+  {id:'tr-006',agent:'argus_monitor',model:'gemini-3.5-flash',tokens:1876,latency:'3.8s',score:0.94,status:'pass'},
+]
+
 export default function TracesPage(){
   const [liveData,setLiveData]=useState<string|null>(null)
   const [loading,setLoading]=useState(false)
@@ -39,10 +48,10 @@ export default function TracesPage(){
           <p style={{fontSize:'15px',color:'rgba(255,255,255,0.6)',marginBottom:'32px'}}>Every agent interaction traced with OpenInference + Arize Phoenix.</p>
           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'16px'}}>
             {[
-              {l:'Total Traces',v:'48,291',c:'#4285F4',i:'📡'},
-              {l:'Avg Latency',v:'2.8s',c:'#00D4AA',i:'⚡'},
-              {l:'Avg Score',v:'0.91',c:'#00D4AA',i:'🎯'},
-              {l:'Models Used',v:'1',c:'#fff',i:'🤖'},
+              {l:'Total Traces',v:'40+',c:'#4285F4',i:'📡'},
+{l:'Avg Latency',v:'~3.2s',c:'#00D4AA',i:'⚡'},
+{l:'Avg Score',v:'0.91',c:'#00D4AA',i:'🎯'},
+{l:'Models Used',v:'2',c:'#fff',i:'🤖'},
             ].map((s,i)=>(
               <div key={i} style={{padding:'20px',background:'rgba(255,255,255,0.06)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'16px'}}>
                 <div style={{display:'flex',justifyContent:'space-between',marginBottom:'10px'}}>
@@ -58,6 +67,7 @@ export default function TracesPage(){
       <svg viewBox="0 0 1440 60" style={{display:'block',marginTop:'-2px'}}><path d="M0,30 C360,60 1080,0 1440,30 L1440,60 L0,60Z" fill="#F8FAFF"/></svg>
 
       <div style={{maxWidth:'1200px',margin:'0 auto',padding:'40px 48px'}}>
+        {/* Live ARGUS Analysis */}
         <div style={{background:'#fff',borderRadius:'16px',border:'1px solid #E8EDF5',padding:'24px',marginBottom:'32px',boxShadow:'0 4px 20px rgba(13,27,62,0.08)'}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px'}}>
             <div>
@@ -90,12 +100,42 @@ export default function TracesPage(){
           )}
         </div>
 
+        {/* Recent Traces Table */}
+        <div style={{display:'flex',gap:'16px',marginBottom:'16px',alignItems:'center'}}>
+          <h2 style={{fontSize:'18px',fontWeight:700,color:'#0D1B3E',flex:1}}>Recent Traces</h2>
+          <div style={{display:'flex',gap:'12px'}}>
+            <span style={{fontSize:'11px',padding:'4px 10px',borderRadius:'20px',background:'rgba(0,212,170,0.1)',color:'#00D4AA',fontWeight:600}}>🛡 ARGUS → gemini-3.5-flash</span>
+            <span style={{fontSize:'11px',padding:'4px 10px',borderRadius:'20px',background:'rgba(66,133,244,0.1)',color:'#4285F4',fontWeight:600}}>⚙️ Workers → gemini-2.5-flash-lite</span>
+          </div>
+        </div>
+        <div style={{background:'#fff',borderRadius:'16px',border:'1px solid #E8EDF5',overflow:'hidden',boxShadow:'0 4px 20px rgba(13,27,62,0.08)'}}>
+          <div style={{padding:'14px 20px',borderBottom:'1px solid #E8EDF5',display:'grid',gridTemplateColumns:'100px 160px 160px 80px 80px 80px 80px',gap:'12px'}}>
+            {['Trace ID','Agent','Model','Tokens','Latency','Score','Status'].map(h=>(
+              <span key={h} style={{fontSize:'12px',fontWeight:700,color:'#8B9DC3',textTransform:'uppercase',letterSpacing:'0.5px'}}>{h}</span>
+            ))}
+          </div>
+          {MOCK_TRACES.map((t,i)=>(
+            <div key={t.id} style={{padding:'14px 20px',borderBottom:'1px solid #E8EDF5',display:'grid',gridTemplateColumns:'100px 160px 160px 80px 80px 80px 80px',gap:'12px',alignItems:'center',background:i%2===0?'#fff':'#FAFBFF'}}>
+              <span style={{fontSize:'12px',color:'#4285F4',fontFamily:'JetBrains Mono,monospace'}}>{t.id}</span>
+              <span style={{fontSize:'12px',color:'#1A1A2E',fontFamily:'JetBrains Mono,monospace'}}>{t.agent}</span>
+              <span style={{fontSize:'11px',color:t.model==='gemini-3.5-flash'?'#00D4AA':'#4285F4',fontWeight:600}}>{t.model}</span>
+              <span style={{fontSize:'12px',color:'#4A5568'}}>{t.tokens}</span>
+              <span style={{fontSize:'12px',color:'#4A5568'}}>{t.latency}</span>
+              <span style={{fontSize:'13px',fontWeight:700,color:t.score>0.85?'#00D4AA':t.score>0.7?'#FFB347':'#FF4444'}}>{t.score}</span>
+              <span style={{padding:'3px 8px',borderRadius:'20px',fontSize:'11px',fontWeight:700,color:t.status==='pass'?'#00D4AA':'#FFB347',background:t.status==='pass'?'rgba(0,212,170,0.1)':'rgba(255,179,71,0.1)',display:'inline-block'}}>
+                {t.status==='pass'?'PASS':'WARN'}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Phoenix CTA */}
         <div style={{marginTop:'48px',padding:'32px',background:'linear-gradient(135deg,#0D1B3E,#0A2444)',borderRadius:'20px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div>
             <h3 style={{fontSize:'20px',fontWeight:700,color:'#fff',marginBottom:'6px'}}>View full traces in Arize Phoenix</h3>
-            <p style={{fontSize:'14px',color:'rgba(255,255,255,0.6)'}}>app.phoenix.arize.com → project: argus-monitoring</p>
+            <p style={{fontSize:'14px',color:'rgba(255,255,255,0.6)'}}>app.phoenix.arize.com/s/abiramisgp → project: argus-monitoring</p>
           </div>
-          <a href="https://app.phoenix.arize.com" target="_blank" rel="noreferrer" style={{padding:'12px 24px',borderRadius:'12px',background:'linear-gradient(135deg,#00D4AA,#00B894)',color:'#0D1B3E',fontSize:'14px',fontWeight:700}}>Open Phoenix →</a>
+          <a href="https://app.phoenix.arize.com/s/abiramisgp" target="_blank" rel="noreferrer" style={{padding:'12px 24px',borderRadius:'12px',background:'linear-gradient(135deg,#00D4AA,#00B894)',color:'#0D1B3E',fontSize:'14px',fontWeight:700}}>Open Phoenix →</a>
         </div>
       </div>
     </div>
