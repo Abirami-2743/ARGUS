@@ -449,7 +449,7 @@ export default function LandingPage() {
             {[
               { step: '01', title: 'Agents Act', desc: 'AI agents operate across their intended tasks — finance, medical, legal, ops — completely normally.', icon: '⚙️' },
               { step: '02', title: 'ARGUS Watches', desc: 'Phoenix MCP captures every trace, reasoning step, and inter-agent message in real time.', icon: '👁' },
-              { step: '03', title: 'Threats Blocked', desc: 'Gemini 2.5 Flash classifies and blocks malicious inputs, rogue outputs, and suspicious patterns instantly.', icon: '🛡️' },
+              { step: '03', title: 'Threats Blocked', desc: 'Gemini 3.5 Flash classifies and blocks malicious inputs, rogue outputs, and suspicious patterns instantly.', icon: '🛡️' },
             ].map((item, i) => (
               <motion.div key={i}
                 initial={{ opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }}
@@ -577,7 +577,7 @@ export default function LandingPage() {
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>
           {[
             { name: 'Google ADK',      color: '#4285F4' },
-            { name: 'Gemini 2.5 Flash', color: '#34A853' },
+            { name: 'Gemini 3.5 Flash', color: '#34A853' },
             { name: 'Arize Phoenix',   color: '#FF6B35' },
             { name: 'Cloud Run',       color: '#4285F4' },
             { name: 'FastAPI',         color: '#00C896' },
