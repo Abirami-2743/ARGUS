@@ -1,9 +1,16 @@
-FROM node:18-alpine
+FROM node:20-alpine
+
 WORKDIR /app
+
 COPY package*.json ./
 RUN npm install
+
 COPY . .
+
 ENV NEXT_PUBLIC_API_URL=https://argus-backend-440905449615.us-central1.run.app
+
 RUN npm run build
+
 EXPOSE 3000
+
 CMD ["npm", "start"]
