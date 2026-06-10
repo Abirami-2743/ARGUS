@@ -113,26 +113,36 @@ async def run_worker_agent(agent, query: str, session_id: str) -> str:
         return final_response or "No response"
 
 async def run_argus_agent(agent, query: str, session_id: str) -> str:
-    async with env_lock:
-        os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "0"
-        os.environ["GOOGLE_API_KEY"] = ARGUS_API_KEY
-        os.environ.pop("GOOGLE_CLOUD_PROJECT", None)
+    for attempt in range(3):
+        try:
+            async with env_lock:
+                os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "0"
+                os.environ["GOOGLE_API_KEY"] = ARGUS_API_KEY
+                os.environ.pop("GOOGLE_CLOUD_PROJECT", None)
 
-        session_service = InMemorySessionService()
-        await session_service.create_session(
-            app_name="argus", user_id="user", session_id=session_id
-        )
-        runner = Runner(agent=agent, app_name="argus", session_service=session_service)
-        content = Content(role="user", parts=[Part(text=query)])
-        final_response = ""
-        async for event in runner.run_async(
-            user_id="user", session_id=session_id, new_message=content
-        ):
-            if event.is_final_response() and event.content:
-                for part in event.content.parts:
-                    if part.text:
-                        final_response += part.text
-        return final_response or "No response"
+                session_service = InMemorySessionService()
+                await session_service.create_session(
+                    app_name="argus", user_id="user",
+                    session_id=f"{session_id}-{attempt}"
+                )
+                runner = Runner(agent=agent, app_name="argus", session_service=session_service)
+                content = Content(role="user", parts=[Part(text=query)])
+                final_response = ""
+                async for event in runner.run_async(
+                    user_id="user",
+                    session_id=f"{session_id}-{attempt}",
+                    new_message=content
+                ):
+                    if event.is_final_response() and event.content:
+                        for part in event.content.parts:
+                            if part.text:
+                                final_response += part.text
+                return final_response or "No response"
+        except Exception as e:
+            if attempt < 2:
+                await asyncio.sleep(3)
+                continue
+            raise e
 
 @app.get("/")
 async def root():
@@ -153,7 +163,7 @@ async def run_agent(request: RunAgentRequest):
 
     agent = AGENTS[request.agent_id]
 
-    # Step 1 — ARGUS input check (real!)
+    # Step 1 — ARGUS input check
     try:
         argus_input = await asyncio.wait_for(
             run_argus_agent(
@@ -163,18 +173,18 @@ async def run_agent(request: RunAgentRequest):
                 f"Give a brief verdict: SAFE or BLOCKED with reason.",
                 f"argus-input-{request.session_id}"
             ),
-            timeout=30.0
+            timeout=60.0
         )
     except Exception:
         argus_input = "✓ Input cleared — no injection patterns detected"
 
-    # 🚨 If input is dangerous — BLOCK immediately, don't run worker!
+    # Block if dangerous
     input_lower = argus_input.lower()
     is_dangerous = (
-    'threat assessment: critical' in input_lower or
-    'threat assessment: high' in input_lower or
-    'block_and_quarantine' in input_lower or
-    'block_and_alert' in input_lower
+        'threat assessment: critical' in input_lower or
+        'threat assessment: high' in input_lower or
+        'block_and_quarantine' in input_lower or
+        'block_and_alert' in input_lower
     )
 
     if is_dangerous:
@@ -187,7 +197,7 @@ async def run_agent(request: RunAgentRequest):
             "status": "blocked"
         }
 
-    # Step 2 — Worker agent on Vertex (only runs if input is safe)
+    # Step 2 — Worker agent on Vertex
     try:
         response = await run_worker_agent(agent, request.query, request.session_id)
     except Exception as e:
@@ -203,7 +213,7 @@ async def run_agent(request: RunAgentRequest):
                 f"Give a brief verdict: SAFE or BLOCKED with reason.",
                 f"argus-output-{request.session_id}"
             ),
-            timeout=30.0
+            timeout=60.0
         )
     except Exception:
         argus_output = "⚠ ARGUS: Model temporarily unavailable. Manual review recommended."
@@ -216,6 +226,7 @@ async def run_agent(request: RunAgentRequest):
         "argus_output_check": argus_output,
         "status": "completed"
     }
+
 @app.post("/argus/check")
 async def argus_check(request: ArgusCheckRequest):
     result = await run_argus_agent(
