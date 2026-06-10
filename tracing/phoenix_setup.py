@@ -9,9 +9,9 @@ def setup_tracing(project_name: str = "argus-monitoring"):
         from phoenix.otel import register
         register(
             project_name=project_name,
-            api_key=api_key,
-            endpoint="https://app.phoenix.arize.com/s/abiramisgp/v1/traces",
+            endpoint="https://app.phoenix.arize.com/v1/traces",
             batch=True,
+            headers={"authorization": f"Bearer {api_key}"},
         )
 
         from openinference.instrumentation.google_adk import GoogleADKInstrumentor
