@@ -1,5 +1,5 @@
 'use client'
-import {useState,useEffect} from 'react'
+import {useState} from 'react'
 import Navbar from '@/components/Navbar'
 import {getTraces} from '@/lib/api'
 
@@ -15,15 +15,15 @@ const MOCK_TRACES=[
 export default function TracesPage(){
   const [liveData,setLiveData]=useState<string|null>(null)
   const [loading,setLoading]=useState(false)
+  const [error,setError]=useState(false)
 
   const fetchLive=async()=>{
     setLoading(true)
+    setError(false)
     try{const r=await getTraces();setLiveData(r.traces_analysis)}
-    catch{setLiveData('Could not connect to backend. Make sure api/main.py is running.')}
+    catch{setError(true)}
     setLoading(false)
   }
-
-  
 
   const renderMarkdown=(text:string)=>text.split('\n').map((line,i)=>{
     const clean=line.replace(/\*\*(.*?)\*\*/g,'$1').replace(/^[\*\-]\s/,'• ')
@@ -49,9 +49,9 @@ export default function TracesPage(){
           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'16px'}}>
             {[
               {l:'Total Traces',v:'40+',c:'#4285F4',i:'📡'},
-{l:'Avg Latency',v:'~3.2s',c:'#00D4AA',i:'⚡'},
-{l:'Avg Score',v:'0.91',c:'#00D4AA',i:'🎯'},
-{l:'Models Used',v:'2',c:'#fff',i:'🤖'},
+              {l:'Avg Latency',v:'~3.2s',c:'#00D4AA',i:'⚡'},
+              {l:'Avg Score',v:'0.91',c:'#00D4AA',i:'🎯'},
+              {l:'Models Used',v:'2',c:'#fff',i:'🤖'},
             ].map((s,i)=>(
               <div key={i} style={{padding:'20px',background:'rgba(255,255,255,0.06)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'16px'}}>
                 <div style={{display:'flex',justifyContent:'space-between',marginBottom:'10px'}}>
@@ -67,7 +67,6 @@ export default function TracesPage(){
       <svg viewBox="0 0 1440 60" style={{display:'block',marginTop:'-2px'}}><path d="M0,30 C360,60 1080,0 1440,30 L1440,60 L0,60Z" fill="#F8FAFF"/></svg>
 
       <div style={{maxWidth:'1200px',margin:'0 auto',padding:'40px 48px'}}>
-        {/* Live ARGUS Analysis */}
         <div style={{background:'#fff',borderRadius:'16px',border:'1px solid #E8EDF5',padding:'24px',marginBottom:'32px',boxShadow:'0 4px 20px rgba(13,27,62,0.08)'}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px'}}>
             <div>
@@ -93,17 +92,21 @@ export default function TracesPage(){
               {renderMarkdown(liveData)}
             </div>
           )}
-          {!loading&&!liveData&&(
-            <div style={{padding:'32px',textAlign:'center',color:'#FF4444',fontSize:'14px'}}>
-              Could not connect to backend. Make sure api/main.py is running.
+          {!loading&&!liveData&&!error&&(
+            <div style={{padding:'32px',textAlign:'center',color:'#8B9DC3',fontSize:'14px'}}>
+              Click "Refresh →" to fetch live ARGUS analysis from Phoenix
+            </div>
+          )}
+          {!loading&&error&&(
+            <div style={{padding:'32px',textAlign:'center',color:'#8B9DC3',fontSize:'14px'}}>
+              ⚠️ ARGUS analysis unavailable — quota limit reached or backend starting up. Please retry in a moment.
             </div>
           )}
         </div>
 
-        {/* Recent Traces Table */}
         <div style={{display:'flex',gap:'16px',marginBottom:'16px',alignItems:'center'}}>
           <h2 style={{fontSize:'18px',fontWeight:700,color:'#0D1B3E',flex:1}}>Recent Traces</h2>
-          <p style={{fontSize:'11px',color:'#8B9DC3',marginBottom:'8px'}}>* Sample trace format — view live traces in Phoenix above</p>
+          <p style={{fontSize:'11px',color:'#8B9DC3'}}>* Sample trace format — view live traces in Phoenix above</p>
           <div style={{display:'flex',gap:'12px'}}>
             <span style={{fontSize:'11px',padding:'4px 10px',borderRadius:'20px',background:'rgba(0,212,170,0.1)',color:'#00D4AA',fontWeight:600}}>🛡 ARGUS → gemini-3.5-flash</span>
             <span style={{fontSize:'11px',padding:'4px 10px',borderRadius:'20px',background:'rgba(66,133,244,0.1)',color:'#4285F4',fontWeight:600}}>⚙️ Workers → gemini-2.5-flash-lite</span>
@@ -116,7 +119,6 @@ export default function TracesPage(){
             ))}
           </div>
           {MOCK_TRACES.map((t,i)=>(
-            
             <div key={t.id} style={{padding:'14px 20px',borderBottom:'1px solid #E8EDF5',display:'grid',gridTemplateColumns:'100px 160px 160px 80px 80px 80px 80px',gap:'12px',alignItems:'center',background:i%2===0?'#fff':'#FAFBFF'}}>
               <span style={{fontSize:'12px',color:'#4285F4',fontFamily:'JetBrains Mono,monospace'}}>{t.id}</span>
               <span style={{fontSize:'12px',color:'#1A1A2E',fontFamily:'JetBrains Mono,monospace'}}>{t.agent}</span>
@@ -131,7 +133,6 @@ export default function TracesPage(){
           ))}
         </div>
 
-        {/* Phoenix CTA */}
         <div style={{marginTop:'48px',padding:'32px',background:'linear-gradient(135deg,#0D1B3E,#0A2444)',borderRadius:'20px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div>
             <h3 style={{fontSize:'20px',fontWeight:700,color:'#fff',marginBottom:'6px'}}>View full traces in Arize Phoenix</h3>
