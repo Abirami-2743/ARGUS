@@ -210,9 +210,7 @@ This creates a closed-loop safety system that gets smarter over time.
 
 ## Demo
 
-🎥 [Watch 3-minute demo](#) *(coming soon)*
-
-🌐 [Live Dashboard](#) *(hosted on Google Cloud Run)*
+🌐 [Live Dashboard](#) https://argus-frontend-440905449615.us-central1.run.app/
 
 ---
 
