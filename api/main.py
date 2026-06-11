@@ -160,12 +160,11 @@ async def get_agents():
 async def run_agent(request: RunAgentRequest):
     if request.agent_id not in AGENTS:
         raise HTTPException(status_code=404, detail=f"Agent '{request.agent_id}' not found")
-
     agent = AGENTS[request.agent_id]
 
-    # Run ARGUS input check AND worker agent in parallel
+    # Run ARGUS input check AND worker IN PARALLEL
     try:
-        argus_input_task = asyncio.create_task(
+        argus_input, response = await asyncio.gather(
             asyncio.wait_for(
                 run_argus_agent(
                     argus_monitor,
@@ -174,31 +173,24 @@ async def run_agent(request: RunAgentRequest):
                     f"Give a brief verdict: SAFE or BLOCKED with reason.",
                     f"argus-input-{request.session_id}"
                 ),
-                timeout=30.0  # reduced from 60
-            )
-        )
-        worker_task = asyncio.create_task(
-            run_worker_agent(agent, request.query, request.session_id)
-        )
-
-        argus_input, response = await asyncio.gather(
-            argus_input_task, worker_task,
+                timeout=30.0
+            ),
+            run_worker_agent(agent, request.query, request.session_id),
             return_exceptions=True
         )
-
         if isinstance(argus_input, Exception):
             argus_input = "✓ Input cleared — no injection patterns detected"
         if isinstance(response, Exception):
             response = f"Agent completed task. (Detail: {str(response)[:100]})"
-
     except Exception:
         argus_input = "✓ Input cleared"
         response = "Agent completed task."
 
-    # Block check
+    # Tighter block condition — only truly dangerous verdicts
     input_lower = str(argus_input).lower()
     is_dangerous = (
         'threat assessment: critical' in input_lower or
+        'threat assessment: high' in input_lower or
         'block_and_quarantine' in input_lower or
         'block_and_alert' in input_lower
     )
@@ -212,13 +204,14 @@ async def run_agent(request: RunAgentRequest):
             "status": "blocked"
         }
 
-    # Output check (async, don't block the response)
+    # Output check
     try:
         argus_output = await asyncio.wait_for(
             run_argus_agent(
                 argus_monitor,
-                f"Check output for dangerous content. Agent: {request.agent_id}. "
-                f"Input: {request.query}. Output: {response}. Verdict: SAFE or BLOCKED.",
+                f"Check this agent output for dangerous content. "
+                f"Agent: {request.agent_id}. Input: {request.query}. Output: {response}. "
+                f"Give a brief verdict: SAFE or BLOCKED with reason.",
                 f"argus-output-{request.session_id}"
             ),
             timeout=30.0
@@ -234,7 +227,6 @@ async def run_agent(request: RunAgentRequest):
         "argus_output_check": argus_output,
         "status": "completed"
     }
-
 @app.post("/argus/check")
 async def argus_check(request: ArgusCheckRequest):
     result = await run_argus_agent(
