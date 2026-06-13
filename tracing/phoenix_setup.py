@@ -4,7 +4,10 @@ load_dotenv()
 
 def setup_tracing(project_name: str = "argus-monitoring"):
     api_key = os.getenv("PHOENIX_API_KEY")
+    space_id = os.getenv("PHOENIX_SPACE_ID")
+    
     print(f"[ARGUS] Using API key: {api_key[:20] if api_key else 'NONE'}...")
+    print(f"[ARGUS] Space ID: {space_id}")
 
     try:
         from phoenix.otel import register
@@ -12,13 +15,15 @@ def setup_tracing(project_name: str = "argus-monitoring"):
             project_name=project_name,
             endpoint="https://app.phoenix.arize.com/v1/traces",
             batch=True,
-            headers={"authorization": f"Bearer {api_key}"},
+            headers={
+                "authorization": f"Bearer {api_key}",
+                "space-id": space_id or "",
+            },
         )
 
         from openinference.instrumentation.google_adk import GoogleADKInstrumentor
         GoogleADKInstrumentor().instrument()
 
         print(f"[ARGUS] ✓ Tracing active → {project_name}")
-        print(f"[ARGUS] ✓ GoogleADKInstrumentor active")
     except Exception as e:
         print(f"[ARGUS] ⚠ Tracing error: {e}")
