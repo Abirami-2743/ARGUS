@@ -4,6 +4,7 @@ load_dotenv()
 
 def setup_tracing(project_name: str = "argus-monitoring"):
     api_key = os.getenv("PHOENIX_API_KEY")
+    print(f"[ARGUS] Using API key: {api_key[:20] if api_key else 'NONE'}...")
 
     try:
         from phoenix.otel import register
