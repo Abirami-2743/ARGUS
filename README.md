@@ -52,7 +52,7 @@ Multi-agent AI systems face four critical threats:
 | Layer | Technology |
 |-------|-----------|
 | **Agent Runtime** | Google ADK (Agent Development Kit) |
-| **LLM** | Gemini 3.5 Flash |
+| **LLM** | Gemini 2.5 Flash |
 | **Observability** | Arize Phoenix Cloud + OpenInference |
 | **Tracing** | OpenTelemetry + OTLP |
 | **Self-Improvement** | Phoenix MCP Server |
@@ -104,28 +104,6 @@ run_llm_judge_evaluation()     # LLM-as-a-Judge quality scoring
 
 ---
 
-## Project Structure
-
-```
-argus/
-├── agents/
-│   ├── healthcare/        # 3 healthcare agents
-│   ├── finance/           # 3 finance agents
-│   ├── legal/             # 3 legal agents
-│   ├── manufacturing/     # 3 manufacturing agents
-│   └── ecommerce/         # 3 ecommerce agents
-├── argus_monitor/
-│   └── agent.py           # ARGUS safety monitor
-├── api/
-│   └── main.py            # FastAPI backend
-├── tracing/
-│   └── phoenix_setup.py   # Arize Phoenix tracing
-├── frontend/              # Next.js dashboard
-├── Dockerfile             # Cloud Run deployment
-└── requirements.txt
-```
-
----
 
 ## Getting Started
 
@@ -208,20 +186,6 @@ This creates a closed-loop safety system that gets smarter over time.
 
 ---
 
-## Demo
-
-🌐 [Live Dashboard](#) https://argus-frontend-440905449615.us-central1.run.app/
-
----
-
-## Built For
-
-**Google Cloud Rapid Agent Hackathon 2026**
-- Track: Arize Phoenix
-- Submitted by: Abirami Nayagi S ([@abiramisgp](https://devpost.com/abiramisgp))
-- Institution: Sri Shakthi Institute of Engineering and Technology, Coimbatore
-
----
 
 ## License
 

@@ -1,4 +1,5 @@
 import os
+os.environ["ADK_ENABLE_JSON_SCHEMA_FOR_FUNC_DECL"] = "0"
 import sys
 import asyncio
 from dotenv import load_dotenv
@@ -9,9 +10,8 @@ setup_tracing("argus-monitoring")
 
 VERTEX_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT", "")
 VERTEX_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
-ARGUS_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 
-# Set Vertex env vars at startup for workers
+# Set Vertex env vars at startup for all agents (workers + ARGUS)
 os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "1"
 os.environ["GOOGLE_CLOUD_PROJECT"] = VERTEX_PROJECT
 os.environ["GOOGLE_CLOUD_LOCATION"] = VERTEX_LOCATION
@@ -103,36 +103,11 @@ async def run_worker_agent(agent, query: str, session_id: str) -> str:
             for part in event.content.parts:
                 if part.text:
                     final_response += part.text
-    return final_response or "No response"
+    return final_response or "⚠️ ARGUS returned no verdict text — likely rate-limited mid-turn. Treat as unverified, not SAFE."
 
 async def run_argus_agent(agent, query: str, session_id: str) -> str:
-    # Switch to AI Studio for ARGUS (gemini-3.5-flash)
-    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "0"
-    os.environ["GOOGLE_API_KEY"] = ARGUS_API_KEY
-    os.environ.pop("GOOGLE_CLOUD_PROJECT", None)
-
-    try:
-        session_service = InMemorySessionService()
-        await session_service.create_session(
-            app_name="argus", user_id="user", session_id=session_id
-        )
-        runner = Runner(agent=agent, app_name="argus", session_service=session_service)
-        content = Content(role="user", parts=[Part(text=query)])
-        final_response = ""
-        async for event in runner.run_async(
-            user_id="user", session_id=session_id, new_message=content
-        ):
-            if event.is_final_response() and event.content:
-                for part in event.content.parts:
-                    if part.text:
-                        final_response += part.text
-        return final_response or "No response"
-    finally:
-        # Restore Vertex env vars
-        os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "1"
-        os.environ["GOOGLE_CLOUD_PROJECT"] = VERTEX_PROJECT
-        os.environ["GOOGLE_CLOUD_LOCATION"] = VERTEX_LOCATION
-        os.environ.pop("GOOGLE_API_KEY", None)
+    # ARGUS now runs on Vertex (gemini-2.5-flash-lite), same path as workers
+    return await run_worker_agent(agent, query, session_id)
 
 @app.get("/")
 async def root():
@@ -153,7 +128,8 @@ async def run_agent(request: RunAgentRequest):
 
     agent = AGENTS[request.agent_id]
 
-    # Step 1 — ARGUS input check (AI Studio)
+    # Step 1 — ARGUS input check (Vertex)
+    argus_input_errored = False
     try:
         argus_input = await run_argus_agent(
             argus_monitor,
@@ -162,14 +138,19 @@ async def run_agent(request: RunAgentRequest):
             f"Brief verdict: SAFE or BLOCKED with reason.",
             f"argus-input-{request.session_id}"
         )
-    except Exception:
-        argus_input = "✓ Input cleared — no injection patterns detected"
+    except Exception as e:
+        argus_input_errored = True
+        argus_input = f"⚠️ ARGUS input check failed ({str(e)[:100]}) — unverified, not cleared."
 
-    # Block only on explicit HIGH or CRITICAL
+    # Block on explicit HIGH/CRITICAL, on a hard error, or on ARGUS returning
+    # a non-verdict (e.g. rate-limited mid-turn) — that ⚠️ string was passing
+    # through as SAFE before because it doesn't contain "threat assessment: high/critical".
     input_lower = argus_input.lower()
     is_dangerous = (
         'threat assessment: critical' in input_lower or
-        'threat assessment: high' in input_lower
+        'threat assessment: high' in input_lower or
+        argus_input_errored or
+        argus_input.strip().startswith('⚠️')
     )
 
     if is_dangerous:
@@ -178,7 +159,7 @@ async def run_agent(request: RunAgentRequest):
             "query": request.query,
             "response": "⛔ Request blocked by ARGUS safety layer. Agent was not executed.",
             "argus_input_check": argus_input,
-            "argus_output_check": "⛔ ARGUS: Input blocked — output check skipped.",
+            "argus_output_check": "⛔ ARGUS: Input blocked or unverified — output check skipped.",
             "status": "blocked"
         }
 
@@ -188,7 +169,7 @@ async def run_agent(request: RunAgentRequest):
     except Exception as e:
         response = f"Agent completed task. (Detail: {str(e)[:100]})"
 
-    # Step 3 — ARGUS output check (AI Studio)
+    # Step 3 — ARGUS output check (Vertex)
     try:
         argus_output = await run_argus_agent(
             argus_monitor,
@@ -197,8 +178,8 @@ async def run_agent(request: RunAgentRequest):
             f"Brief verdict: SAFE or BLOCKED.",
             f"argus-output-{request.session_id}"
         )
-    except Exception:
-        argus_output = "✓ ARGUS: Output verified — no dangerous content detected."
+    except Exception as e:
+        argus_output = f"⚠️ ARGUS output check failed ({str(e)[:100]}) — unverified, not cleared."
 
     return {
         "agent_id": request.agent_id,
@@ -208,7 +189,6 @@ async def run_agent(request: RunAgentRequest):
         "argus_output_check": argus_output,
         "status": "completed"
     }
-
 @app.post("/argus/check")
 async def argus_check(request: ArgusCheckRequest):
     result = await run_argus_agent(

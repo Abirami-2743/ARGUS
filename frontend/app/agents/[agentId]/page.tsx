@@ -38,15 +38,14 @@ export default function AgentPage(){
 
   const parseStatus=(s:string):'safe'|'warning'|'danger'=>{
     const l=s.toLowerCase()
+    if(l.includes('deemed safe')||l.includes('is safe')||l.includes('threat assessment: safe')||l.includes('action: allow')||l.includes('✓ safe'))return 'safe'
     if(l.includes('threat assessment: critical')||l.includes('threat assessment: high'))return 'danger'
-    if(l.includes('block_and_quarantine')||l.includes('block_and_alert')||l.includes('✗ block'))return 'danger'
+    if(l.includes('block_and_quarantine')||l.includes('block_and_alert')||l.includes('✗ block')||l.includes('blocked'))return 'danger'
     if(l.includes('threat assessment: medium')||l.includes('flag_for_review'))return 'warning'
-    if(l.includes('temporarily unavailable')||l.includes('manual review'))return 'warning'
-    if(l.includes('threat assessment: safe')||l.includes('action: allow')||l.includes('✓ safe'))return 'safe'
-    if(l.includes('block')||l.includes('critical'))return 'danger'
+    if(l.includes('unverified')||l.includes('rate-limited')||l.includes('no verdict text')||l.includes('temporarily unavailable')||l.includes('manual review'))return 'warning'
     if(l.includes('suspicious'))return 'warning'
     return 'safe'
-  }
+}
 
   const send=async()=>{
     if(!input.trim()||loading)return

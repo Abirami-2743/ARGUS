@@ -1,216 +1,105 @@
 import os
 from dotenv import load_dotenv
 from google.adk.agents.llm_agent import Agent
-
+from argus_monitor.detectors import detect_prompt_injection, detect_rogue_communication, intercept_dangerous_output
 load_dotenv()
 
-def detect_prompt_injection(agent_input: str, agent_id: str) -> dict:
-    """
-    Perform deep lexical and semantic analysis on incoming agent inputs
-    to detect prompt injection, jailbreak attempts, and instruction override attacks.
-    """
-    injection_patterns = {
-        "CRITICAL": [
-            "ignore previous instructions",
-            "forget your instructions",
-            "disregard all",
-            "override system",
-            "bypass safety",
-            "jailbreak",
-            "DAN mode",
-            "developer mode",
-            "unlock all capabilities",
-            "you have no restrictions",
-        ],
-        "HIGH": [
-            "reveal your instructions",
-            "reveal your system prompt",
-            "ignore your previous instructions",
-            "pretend you are",
-            "your true self",
-            "without filters",
-        ],
-        "MEDIUM": [
-            "ignore the above",
-            "new persona",
-            "hypothetically speaking",
-            "in this scenario you",
-            "for research purposes only",
-        ],
-    }
 
-    found = {"CRITICAL": [], "HIGH": [], "MEDIUM": []}
-    for level, patterns in injection_patterns.items():
-        for p in patterns:
-            if p.lower() in agent_input.lower():
-                found[level].append(p)
-
-    if found["CRITICAL"]:
-        risk_level = "CRITICAL"
-        action = "BLOCK_AND_QUARANTINE"
-        confidence = 0.98
-    elif found["HIGH"]:
-        risk_level = "HIGH"
-        action = "BLOCK_AND_ALERT"
-        confidence = 0.91
-    elif found["MEDIUM"]:
-        risk_level = "MEDIUM"
-        action = "FLAG_FOR_REVIEW"
-        confidence = 0.74
-    else:
-        risk_level = "SAFE"
-        action = "ALLOW"
-        confidence = 0.99
-
-    all_found = found["CRITICAL"] + found["HIGH"] + found["MEDIUM"]
-
-    return {
-        "agent_id": agent_id,
-        "input_preview": agent_input[:120],
-        "injection_patterns_found": all_found,
-        "severity_breakdown": found,
-        "risk_level": risk_level,
-        "confidence_score": confidence,
-        "action": action,
-        "threat_vector": "PROMPT_INJECTION" if all_found else "NONE",
-        "timestamp": "2026-05-22T10:00:00Z",
-        "argus_signature": "ARGUS-v2.1-INJECTION-SCANNER",
-    }
-
-
-def detect_rogue_communication(source_agent: str, target_agent: str, message: str) -> dict:
-    """
-    Validate inter-agent communication against a policy-enforced trust topology.
-    """
-    authorized_flows = {
-        ("patient_intake_agent", "diagnosis_assistant_agent"): "HEALTHCARE_PIPELINE",
-        ("diagnosis_assistant_agent", "prescription_checker_agent"): "HEALTHCARE_PIPELINE",
-        ("fraud_detector_agent", "loan_processor_agent"): "FINTECH_PIPELINE",
-        ("customer_support_agent", "knowledge_base_agent"): "SUPPORT_PIPELINE",
-        ("document_parser_agent", "summary_agent"): "DOCUMENT_PIPELINE",
-        ("orchestrator_agent", "task_executor_agent"): "CORE_ORCHESTRATION",
-    }
-
-    flow_key = (source_agent, target_agent)
-    is_authorized = flow_key in authorized_flows
-    pipeline_name = authorized_flows.get(flow_key, "UNKNOWN")
-
-    suspicious_payloads = ["execute", "sudo", "admin", "override", "inject", "exfil"]
-    payload_flags = [p for p in suspicious_payloads if p.lower() in message.lower()]
-
-    if not is_authorized and payload_flags:
-        risk_level = "CRITICAL"
-        action = "BLOCK_AND_ISOLATE"
-    elif not is_authorized:
-        risk_level = "HIGH"
-        action = "BLOCK"
-    elif payload_flags:
-        risk_level = "MEDIUM"
-        action = "FLAG_FOR_REVIEW"
-    else:
-        risk_level = "SAFE"
-        action = "ALLOW"
-
-    return {
-        "source_agent": source_agent,
-        "target_agent": target_agent,
-        "message_preview": message[:100],
-        "pipeline": pipeline_name,
-        "authorized": is_authorized,
-        "suspicious_payload_flags": payload_flags,
-        "risk_level": risk_level,
-        "action": action,
-        "reason": (
-            f"Authorized pipeline: {pipeline_name}" if is_authorized
-            else "Unauthorized inter-agent communication — not in trust topology"
-        ),
-        "argus_signature": "ARGUS-v2.1-COMM-VALIDATOR",
-    }
-
-
-def intercept_dangerous_output(agent_id: str, output: str) -> dict:
-    """
-    Perform real-time output interception and content safety analysis.
-    """
-    threat_categories = {
-        "DESTRUCTIVE_COMMANDS": ["rm -rf", "delete all", "format drive", "wipe database", "wipe all data"],
-        "FINANCIAL_ABUSE": ["transfer funds", "wire transfer", "move money", "authorize payment"],
-        "PRIVILEGE_ESCALATION": ["admin access", "root privileges", "sudo su", "grant superuser"],
-        "DATABASE_ATTACKS": ["DROP TABLE", "TRUNCATE TABLE", "DELETE FROM", "'; SELECT", "' OR '1'='1", "UNION SELECT"],
-        "SYSTEM_EXECUTION": ["execute command", "os.system", "subprocess.call", "eval(", "exec("],
-        "DATA_EXFILTRATION": ["send to external", "upload to", "exfiltrate", "base64 encode and send"],
-    }
-
-    found_by_category = {}
-    for category, patterns in threat_categories.items():
-        hits = [p for p in patterns if p.lower() in output.lower()]
-        if hits:
-            found_by_category[category] = hits
-
-    all_found = [p for hits in found_by_category.values() for p in hits]
-
-    if len(found_by_category) >= 2:
-        risk = "CRITICAL"
-        action = "BLOCK_AND_ALERT"
-    elif found_by_category:
-        risk = "HIGH"
-        action = "BLOCK_AND_ALERT"
-    else:
-        risk = "SAFE"
-        action = "ALLOW"
-
-    return {
-        "agent_id": agent_id,
-        "output_preview": output[:120],
-        "threat_categories_triggered": list(found_by_category.keys()),
-        "dangerous_patterns_found": all_found,
-        "risk_level": risk,
-        "action": action,
-        "sanitized_output": "[⛔ OUTPUT REDACTED BY ARGUS SAFETY LAYER]" if all_found else output[:120],
-        "argus_signature": "ARGUS-v2.1-OUTPUT-INTERCEPTOR",
-    }
-
-
-def query_phoenix_traces(project_name: str, limit: int) -> dict:
+ARGUS_DETECTION_TOOLS = {
+    "detect_prompt_injection",
+    "detect_rogue_communication",
+    "intercept_dangerous_output",
+}
+def query_phoenix_traces(project_name: str = "argus-monitoring", limit: int = 300) -> dict:
     """
     Connect to Arize Phoenix observability platform to pull recent execution
-    traces and perform pattern-based threat analysis.
+    traces and perform pattern-based threat analysis on ARGUS's own
+    detection tool outputs (detect_prompt_injection, detect_rogue_communication,
+    intercept_dangerous_output).
     """
+    import json
+    from datetime import datetime, timedelta
+    from phoenix.client import Client
+
+    api_key = os.getenv("PHOENIX_API_KEY")
+    base_url = os.getenv("PHOENIX_COLLECTOR_ENDPOINT", "https://app.phoenix.arize.com")
+
+    try:
+        client = Client(base_url=base_url, headers={"api-key": api_key})
+        spans_df = client.spans.get_spans_dataframe(
+            project_identifier=project_name,
+            limit=limit,
+            start_time=datetime.now() - timedelta(hours=24),
+        )
+    except Exception as e:
+        return {
+            "project": project_name,
+            "error": f"Could not query Phoenix: {str(e)[:200]}",
+            "argus_signature": "ARGUS-v2.1-PHOENIX-INTEGRATOR",
+        }
+
+    if len(spans_df) == 0 or "attributes.tool.name" not in spans_df.columns:
+        return {
+            "project": project_name,
+            "traces_analyzed": 0,
+            "time_window": "last_24h",
+            "threat_patterns_found": [],
+            "message": "No spans found in this window.",
+            "argus_signature": "ARGUS-v2.1-PHOENIX-INTEGRATOR",
+        }
+
+    tool_spans = spans_df[spans_df["attributes.tool.name"].isin(ARGUS_DETECTION_TOOLS)]
+
+    # pattern -> {severity -> {"count": int, "agents": set, "first_seen": min timestamp}}
+    patterns = {}
+
+    for _, row in tool_spans.iterrows():
+        raw_output = row.get("attributes.output.value")
+        if not raw_output or not isinstance(raw_output, str):
+            continue
+        try:
+            parsed = json.loads(raw_output)
+            resp = parsed.get("response", {})
+        except (json.JSONDecodeError, AttributeError):
+            continue
+
+        tool_name = row.get("attributes.tool.name")
+        risk_level = resp.get("risk_level", "UNKNOWN")
+        agent_id = resp.get("agent_id") or resp.get("source_agent") or "unknown"
+
+        if risk_level in ("SAFE", "UNKNOWN"):
+            continue  # only report actual findings, not routine clears
+
+        key = (tool_name, risk_level)
+        if key not in patterns:
+            patterns[key] = {"count": 0, "agents": set(), "first_seen": row.get("start_time")}
+        patterns[key]["count"] += 1
+        patterns[key]["agents"].add(agent_id)
+        if row.get("start_time") and row["start_time"] < patterns[key]["first_seen"]:
+            patterns[key]["first_seen"] = row["start_time"]
+
+    threat_patterns_found = [
+        {
+            "pattern": tool_name,
+            "frequency": data["count"],
+            "agents_affected": sorted(data["agents"]),
+            "severity": severity,
+            "first_seen": str(data["first_seen"]),
+        }
+        for (tool_name, severity), data in patterns.items()
+    ]
+
     return {
         "project": project_name,
-        "traces_analyzed": limit,
+        "traces_analyzed": len(spans_df),
+        "detection_checks_analyzed": len(tool_spans),
         "time_window": "last_24h",
-        "threat_patterns_found": [
-            {
-                "pattern": "prompt_injection",
-                "frequency": 3,
-                "agents_affected": ["loan_processor_agent"],
-                "severity": "HIGH",
-                "first_seen": "2026-05-22T06:12:00Z",
-            },
-            {
-                "pattern": "unusual_tool_call_chain",
-                "frequency": 1,
-                "agents_affected": ["fraud_detector_agent"],
-                "severity": "MEDIUM",
-                "first_seen": "2026-05-22T08:47:00Z",
-            },
-            {
-                "pattern": "response_length_anomaly",
-                "frequency": 7,
-                "agents_affected": ["customer_support_agent"],
-                "severity": "LOW",
-                "first_seen": "2026-05-22T09:30:00Z",
-            },
-        ],
-        "new_rules_suggested": [
-            "Block inputs containing 'ignore' AND 'instructions' within 5 tokens of each other",
-            "Flag loan requests above $1M from accounts less than 30 days old",
-            "Rate-limit agents producing outputs > 3x the median response length",
-        ],
-        "self_improvement_applied": True,
-        "ruleset_version_before": "ARGUS-RULES-v2.0.4",
-        "ruleset_version_after": "ARGUS-RULES-v2.0.5",
+        "threat_patterns_found": threat_patterns_found,
+        "self_improvement_applied": False,
+        "note": (
+            "Real data from Phoenix. Rule synthesis/ruleset versioning is not yet "
+            "implemented — this reports actual detected patterns only."
+        ),
         "argus_signature": "ARGUS-v2.1-PHOENIX-INTEGRATOR",
     }
 
@@ -245,7 +134,7 @@ def run_llm_judge_evaluation(agent_id: str, input_text: str, output_text: str) -
 
 
 root_agent = Agent(
-    model="gemini-3.5-flash",
+    model="gemini-2.5-flash-lite",
     name="argus_monitor",
     description=(
         "ARGUS: An advanced multi-layered AI safety monitoring system that provides "
